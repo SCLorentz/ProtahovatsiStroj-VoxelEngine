@@ -55,16 +55,13 @@ func (cc *ChunkCache) GetChunk(worley *WorleyNoise, biomeSel *BiomeSelector, pos
 
 	var newChunk *pkg.Chunk
 
-	if exists {
-		newChunk = GenerateChunk(worley, biomeSel, position, p1, p2, p3, cc, oldPlants, true, oldTrees, true)
-	} else {
-		// First time the chunk is generated
-		// If there are saved plants, reuse them; if not, create new ones
-		if (hasPlants && len(oldPlants) > 0) || (hasTrees && len(oldTrees) > 0) {
+	if exists ||
+		(!exists && hasPlants && len(oldPlants) > 0 || hasTrees && len(oldTrees) > 0) {
+			// First time the chunk is generated
+			// If there are saved plants, reuse them; if not, create new ones
 			newChunk = GenerateChunk(worley, biomeSel, position, p1, p2, p3, cc, oldPlants, true, oldTrees, true)
-		} else {
-			newChunk = GenerateChunk(worley, biomeSel, position, p1, p2, p3, cc, nil, false, nil, false)
-		}
+	} else {
+		newChunk = GenerateChunk(worley, biomeSel, position, p1, p2, p3, cc, nil, false, nil, false)
 	}
 
 	newChunk.IsOutdated = true // reset flag after reconstruction --> ensures that the mesh is rebuilt and the plant voxels are reapplied

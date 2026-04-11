@@ -142,14 +142,14 @@ func applyUnderwaterEffect(game *load.Game) {
 			localZ >= 0 && localZ < pkg.ChunkSize {
 
 			voxel := chunk.Voxels[localX][localY][localZ]
-			if voxel.Type == "Water" && game.Camera.Position.Y < float32(waterLevel)-0.5 {
-				// apply blue overlay
-				rl.SetBlendMode(rl.BlendMode(0))
-				rl.DrawRectangle(0, 0, int32(rl.GetScreenWidth()), int32(rl.GetScreenHeight()), rl.NewColor(0, 0, 255, 100))
+			if voxel.Type != "Water" && game.Camera.Position.Y > float32(waterLevel)-0.5 { return }
+			
+			// apply blue overlay
+			rl.SetBlendMode(rl.BlendMode(0))
+			rl.DrawRectangle(0, 0, int32(rl.GetScreenWidth()), int32(rl.GetScreenHeight()), rl.NewColor(0, 0, 255, 100))
 
-				if shouldRain == 1 {
-					rl.SetMusicVolume(load.RainSound, currentVolume*0.3)
-				}
+			if shouldRain == 1 {
+				rl.SetMusicVolume(load.RainSound, currentVolume*0.3)
 			}
 		}
 	}
