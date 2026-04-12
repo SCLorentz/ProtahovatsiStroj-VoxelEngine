@@ -13,6 +13,43 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+func DrawFrameView(chunk *pkg.Chunk, chunkPos rl.Vector3) {
+	verts := chunk.Vertices
+  inds := chunk.Indices
+
+	for i := 0; i < len(inds); i += 3 {
+		i0 := int(inds[i]) * 3
+		i1 := int(inds[i+1]) * 3
+		i2 := int(inds[i+2]) * 3
+
+		v0 := rl.NewVector3(verts[i0], verts[i0+1], verts[i0+2])
+		v1 := rl.NewVector3(verts[i1], verts[i1+1], verts[i1+2])
+		v2 := rl.NewVector3(verts[i2], verts[i2+1], verts[i2+2])
+
+		x0 := rl.Vector3{
+			X: v0.X + chunkPos.X,
+			Y: v0.Y + chunkPos.Y,
+			Z: v0.Z + chunkPos.Z,
+		}
+
+		x1 := rl.Vector3{
+			X: v1.X + chunkPos.X,
+			Y: v1.Y + chunkPos.Y,
+			Z: v1.Z + chunkPos.Z,
+		}
+
+		x2 := rl.Vector3{
+			X: v2.X + chunkPos.X,
+			Y: v2.Y + chunkPos.Y,
+			Z: v2.Z + chunkPos.Z,
+		}
+
+		rl.DrawLine3D(x0, x1, rl.Red)
+		rl.DrawLine3D(x1, x2, rl.Red)
+		rl.DrawLine3D(x2, x0, rl.Red)
+	}
+}
+
 func RenderVoxels(game *load.Game) {
 	cam := game.Camera.Position
 
@@ -41,68 +78,23 @@ func RenderVoxels(game *load.Game) {
 		}
 
 		if GameState.DrawFrames {
-			verts := chunk.Vertices
-			inds := chunk.Indices
-			for i := 0; i < len(inds); i += 3 {
-				i0 := int(inds[i]) * 3
-				i1 := int(inds[i+1]) * 3
-				i2 := int(inds[i+2]) * 3
-
-				v0 := rl.NewVector3(verts[i0], verts[i0+1], verts[i0+2])
-				v1 := rl.NewVector3(verts[i1], verts[i1+1], verts[i1+2])
-				v2 := rl.NewVector3(verts[i2], verts[i2+1], verts[i2+2])
-
-				x0 := rl.Vector3{
-					X: v0.X + chunkPos.X,
-					Y: v0.Y + chunkPos.Y,
-					Z: v0.Z + chunkPos.Z,
-				}
-
-				x1 := rl.Vector3{
-					X: v1.X + chunkPos.X,
-					Y: v1.Y + chunkPos.Y,
-					Z: v1.Z + chunkPos.Z,
-				}
-
-				x2 := rl.Vector3{
-					X: v2.X + chunkPos.X,
-					Y: v2.Y + chunkPos.Y,
-					Z: v2.Z + chunkPos.Z,
-				}
-
-				rl.DrawLine3D(x0, x1, rl.Red)
-				rl.DrawLine3D(x1, x2, rl.Red)
-				rl.DrawLine3D(x2, x0, rl.Red)
-			}
+			DrawFrameView(chunk, chunkPos)
 		}
 
 		// --- Passage 2: plants per chunk (without global sorting) ---
-		for _, voxel := range chunk.SpecialVoxels {
-			if voxel.Type != "Plant" { continue }
-
-			// The plant model is a little off center so I just adjust it a little
-			pos := rl.NewVector3(
-				chunkPos.X+float32(voxel.Position.X),
-				chunkPos.Y+float32(voxel.Position.Y),
-				chunkPos.Z+float32(voxel.Position.Z)-0.8,
-			)
-			rl.DrawModel(voxel.Model, pos, 0.4, rl.White)
-		}
-	}
-
-	for coord, chunk := range game.ChunkCache.Active {
-		chunkPos := rl.NewVector3(
-			float32(coord.X*pkg.ChunkSize),
-			0,
-			float32(coord.Z*pkg.ChunkSize),
-		)
-
 		for _, voxel := range chunk.SpecialVoxels {
 			pos := rl.NewVector3(
 				chunkPos.X+float32(voxel.Position.X),
 				chunkPos.Y+float32(voxel.Position.Y),
 				chunkPos.Z+float32(voxel.Position.Z),
 			)
+
+			if voxel.Type == "Plant" {
+				// The plant model is a little off center so I just adjust it a little
+				pos.Z -= 0.8
+				rl.DrawModel(voxel.Model, pos, 0.4, rl.White)
+				continue
+			}
 
 			transparentItems = append(transparentItems, pkg.TransparentItem{
 				Position:       pos,
@@ -131,11 +123,9 @@ func RenderVoxels(game *load.Game) {
 		case "Water":
 			p := rl.NewVector3(it.Position.X+0.5, it.Position.Y+0.5, it.Position.Z+0.5)
 
-			/*
-				// calculates light intensity for this position
-				lightIntensity := calculateLightIntensity(p, game.LightPosition)
-				litColor := applyLighting(it.Color, lightIntensity)
-			*/
+			// calculates light intensity for this position
+			//lightIntensity := calculateLightIntensity(p, game.LightPosition)
+			//litColor := applyLighting(it.Color, lightIntensity)
 
 			rl.DrawPlane(p, rl.NewVector2(1.0, 1.0), it.Color)
 		case "Cloud":
@@ -146,7 +136,43 @@ func RenderVoxels(game *load.Game) {
 			p := rl.NewVector3(it.Position.X, float32(pkg.CloudHeight), it.Position.Z)
 
 			if GameState.RenderClouds {
-				rl.DrawCube(p, 1.0, 0.0, 1.0, it.Color)
+				/*CloudMesh := rl.Mesh{}
+
+				vertices := []float32{}
+				size := float32(1)
+				offset := int32(len(vertices) / 3)
+
+				vertices = append(vertices, 
+				    p.X, p.Y, p.Z+size,
+				    p.X+size, p.Y, p.Z+size,
+				    p.X+size, p.Y+size, p.Z+size,
+				    p.X, p.Y+size, p.Z+size,
+				)
+
+				indices := []uint16{}
+				indices = append(indices, 
+				    uint16(offset+0), uint16(offset+1), uint16(offset+2),
+				    uint16(offset+0), uint16(offset+2), uint16(offset+3),
+				)
+
+				normals := []float32{}
+				for i := 0; i < 4; i++ {
+				    normals = append(normals, 0, 0, 1)
+				}
+				//texcoords := []float32{}
+
+				CloudMesh.VertexCount = int32(len(vertices) / 3)
+				CloudMesh.TriangleCount = int32(len(indices) / 3)
+
+				CloudMesh.Vertices = &vertices[0]
+				CloudMesh.Indices = &indices[0]
+				CloudMesh.Normals = &normals[0]
+				//CloudMesh.Texcoords = &texcoords[0]
+
+				rl.UploadMesh(&CloudMesh, false)
+				rl.LoadModelFromMesh(CloudMesh)*/
+
+				rl.DrawCube(p, 1.0, 1.0, 1.0, it.Color)
 			}
 		}
 	}
@@ -175,7 +201,7 @@ func applyUnderwaterEffect(game *load.Game) {
 		localZ >= 0 && localZ < pkg.ChunkSize {
 
 			voxel := chunk.Voxels[localX][localY][localZ]
-			if voxel.Type != "Water" && game.Camera.Position.Y > float32(waterLevel)-0.5 { return }
+			if voxel.Type != "Water" || game.Camera.Position.Y > float32(waterLevel)-0.5 { return }
 			
 			// apply blue overlay
 			rl.SetBlendMode(rl.BlendMode(0))
@@ -189,7 +215,6 @@ func applyUnderwaterEffect(game *load.Game) {
 
 var shouldRain = 0
 var nextWeatherChange = 0
-
 var targetFogDensity = float32(1)
 
 func colorToVec4(c rl.Color) []float32 {
@@ -228,9 +253,14 @@ func RenderGame(game *load.Game) {
 	//	Begin drawing solid blocks and then transparent ones (avoid flickering)
 	RenderVoxels(game)
 
+	updateRainAudio(0.0)
+
+	targetFogDensity = 1
+	// clean up particles when it stops raining.
+	pkg.RainDrops = nil
+
 	if shouldRain == 1 {
 		targetFogDensity = 1.5
-
 		updateRainAudio(1.0)
 
 		// only initializes if there are not enough particles yet.
@@ -239,15 +269,7 @@ func RenderGame(game *load.Game) {
 		}
 
 		updateRain(game, 40)
-
 		drawRain()
-	} else {
-		targetFogDensity = 1
-
-		updateRainAudio(0.0)
-
-		// clean up particles when it stops raining.
-		pkg.RainDrops = nil
 	}
 
 	rl.EndMode3D()

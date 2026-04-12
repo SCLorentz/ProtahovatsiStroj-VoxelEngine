@@ -12,6 +12,7 @@ import (
 )
 
 const MaxChunksPerFrame = 2
+var StopChunkLoading = false
 
 type PendingWrite struct {
 	Pos   [3]int
@@ -54,6 +55,10 @@ func (cc *ChunkCache) GetChunk(worley *WorleyNoise, biomeSel *BiomeSelector, pos
 	cc.CacheMutex.RUnlock()
 
 	var newChunk *pkg.Chunk
+
+	if StopChunkLoading {
+		return newChunk
+	}
 
 	if exists ||
 		(!exists && hasPlants && len(oldPlants) > 0 || hasTrees && len(oldTrees) > 0) {
@@ -103,6 +108,10 @@ func (cc *ChunkCache) GetChunk(worley *WorleyNoise, biomeSel *BiomeSelector, pos
 }
 
 func (cc *ChunkCache) CleanUp(playerPosition rl.Vector3) {
+	if StopChunkLoading {
+		return
+	}
+
 	cc.CacheMutex.Lock()
 	defer cc.CacheMutex.Unlock()
 
@@ -112,8 +121,8 @@ func (cc *ChunkCache) CleanUp(playerPosition rl.Vector3) {
 	for coord := range cc.Active {
 		if Abs(coord.X-playerCoord.X) > chDist ||
 			Abs(coord.Z-playerCoord.Z) > chDist {
-			delete(cc.Active, coord)
 			// DO NOT delete cc.PlantsCache[coord] — plants remain stored
+			delete(cc.Active, coord)
 		}
 	}
 }
@@ -150,7 +159,9 @@ func ManageChunks(worley *WorleyNoise, biomeSel *BiomeSelector, playerPosition r
 	chunkCache.CacheMutex.RLock()
 	for _, coord := range candidates {
 		chunk, exists := chunkCache.Active[coord]
-		if !exists || (chunk != nil && chunk.IsOutdated) {
+		if exists || !(chunk != nil && chunk.IsOutdated) {
+			continue
+		}
 			chunkPos := rl.NewVector3(float32(coord.X*pkg.ChunkSize), 0, float32(coord.Z*pkg.ChunkSize))
 
 			chunkRequests <- chunkPos
@@ -160,7 +171,6 @@ func ManageChunks(worley *WorleyNoise, biomeSel *BiomeSelector, playerPosition r
 			if chunksQueued >= MaxChunksPerFrame {
 				break // does not block the loop, only exits
 			}
-		}
 	}
 	chunkCache.CacheMutex.RUnlock()
 	close(chunkRequests)
@@ -180,7 +190,7 @@ func ManageChunks(worley *WorleyNoise, biomeSel *BiomeSelector, playerPosition r
 				Y: 0,
 				Z: coord.Z + int(direction.Z),
 			}
-			if neighbor, exists := chunkCache.Active[neighborCoord]; exists {
+			if neighbor, exists := chunkCache.Active[neighborCoord]; exists && chunk.Neighbors[i] != neighbor {
 				if chunk.Neighbors[i] != neighbor {
 					// Update reference
 					chunk.Neighbors[i] = neighbor
@@ -190,11 +200,10 @@ func ManageChunks(worley *WorleyNoise, biomeSel *BiomeSelector, playerPosition r
 				}
 				continue
 			}
-			if chunk.Neighbors[i] != nil {
-				// Neighbor was removed → mark chunk as outdated
-				chunk.Neighbors[i] = nil
-				chunk.IsOutdated = true
-			}
+			if chunk.Neighbors[i] == nil { continue }
+			// Neighbor was removed → mark chunk as outdated
+			chunk.Neighbors[i] = nil
+			chunk.IsOutdated = true
 		}
 	}
 	chunkCache.CacheMutex.Unlock()

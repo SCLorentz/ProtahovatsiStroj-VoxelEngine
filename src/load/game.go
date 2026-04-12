@@ -93,6 +93,11 @@ func InitGame() Game {
 		Projection: rl.CameraPerspective,
 	}
 	cameraMode := rl.CameraFree
+	//cameraMode := rl.CameraFirstPerson
+
+	/*playerPosition := rl.NewVector3(0.0, 1.0, 2.0)
+	playerSize := rl.NewVector3(1.0, 2.0, 1.0)
+	playerColor := rl.Green*/
 
 	// Initializes Perlin noise
 	seed1 := rand.Int63()
@@ -135,7 +140,6 @@ func InitGame() Game {
 
 	//	Start weather & time cycle
 	initTimer()
-
 	initAudio()
 
 	// Load .vox models

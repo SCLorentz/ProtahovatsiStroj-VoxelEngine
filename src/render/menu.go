@@ -6,6 +6,7 @@ import (
 
 	"go-engine/src/load"
 	"go-engine/src/pkg"
+	"go-engine/src/world"
 
 	gui "github.com/gen2brain/raylib-go/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -92,12 +93,14 @@ func renderConfigMenu(menuX, menuY, width int32) {
 		fmt.Sprintf("View Distance: %d", pkg.ChunkDistance),
 	)
 
-	newGuiSlider(menuX+20, menuY+490+offsetY, float32(width-40), 40.0,
+	newButton(menuX+20, menuY+480+offsetY, float32(width-40), 40.0, &world.StopChunkLoading, "Stop Chunk Loading")
+
+	newGuiSlider(menuX+20, menuY+530+offsetY, float32(width-40), 40.0,
 		&load.FogCoefficient, 0.0, 0.1,
 		fmt.Sprintf("Fog Density: %.3f", load.FogCoefficient),
 	)
 
-	newGuiSlider(menuX+20, menuY+580+offsetY, float32(width-40), 40.0,
+	newGuiSlider(menuX+20, menuY+620+offsetY, float32(width-40), 40.0,
 		&baseVolume, 0.0, 1.0,
 		fmt.Sprintf("Sound FX Volume: %.3f", baseVolume),
 	)
