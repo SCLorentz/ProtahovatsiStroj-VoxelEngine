@@ -13,6 +13,7 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+<<<<<<< HEAD
 func DrawFrameView(chunk *pkg.Chunk, chunkPos rl.Vector3) {
 	verts := chunk.Vertices
   inds := chunk.Indices
@@ -49,6 +50,9 @@ func DrawFrameView(chunk *pkg.Chunk, chunkPos rl.Vector3) {
 		rl.DrawLine3D(x2, x0, rl.Red)
 	}
 }
+=======
+var cloudColor rl.Color = world.BlockTypes["Cloud"].Color
+>>>>>>> 940ec6882166068be7b17332f081b411320e56dc
 
 func RenderVoxels(game *load.Game) {
 	cam := game.Camera.Position
@@ -135,6 +139,7 @@ func RenderVoxels(game *load.Game) {
 			*/
 			p := rl.NewVector3(it.Position.X, float32(pkg.CloudHeight), it.Position.Z)
 
+<<<<<<< HEAD
 			if GameState.RenderClouds {
 				/*CloudMesh := rl.Mesh{}
 
@@ -173,6 +178,10 @@ func RenderVoxels(game *load.Game) {
 				rl.LoadModelFromMesh(CloudMesh)*/
 
 				rl.DrawCube(p, 1.0, 1.0, 1.0, it.Color)
+=======
+			if ShowClouds {
+				rl.DrawCube(p, 1.0, 0.0, 1.0, cloudColor)
+>>>>>>> 940ec6882166068be7b17332f081b411320e56dc
 			}
 		}
 	}
