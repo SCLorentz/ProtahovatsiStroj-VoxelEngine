@@ -167,6 +167,8 @@ func BuildChunkMesh(game *load.Game, chunk *pkg.Chunk, chunkPos rl.Vector3) {
 		mesh.Normals = &chunk.Normals[0]
 	}
 
+	mesh = BuildGreedyMesh(game, chunk)
+
 	rl.UploadMesh(&mesh, false)
 	model := rl.LoadModelFromMesh(mesh)
 
@@ -181,7 +183,7 @@ func BuildChunkMesh(game *load.Game, chunk *pkg.Chunk, chunkPos rl.Vector3) {
 	chunk.IsOutdated = false
 }
 
-func BuildCloudGreedyMesh(game *load.Game, chunk *pkg.Chunk) {
+func BuildGreedyMesh(game *load.Game, chunk *pkg.Chunk) rl.Mesh {
 	// Clears buffers and specials list
 	chunk.Vertices = chunk.Vertices[:0]
 	chunk.Indices = chunk.Indices[:0]
@@ -192,79 +194,106 @@ func BuildCloudGreedyMesh(game *load.Game, chunk *pkg.Chunk) {
 
 	Nx, Ny, Nz := int(pkg.ChunkSize), int(pkg.WorldHeight), int(pkg.ChunkSize)
 
-	y := pkg.CloudHeight //int(float64(pkg.WorldHeight) * pkg.WaterLevelFraction)
+	//y := int(float64(pkg.WorldHeight) * pkg.WaterLevelFraction)//pkg.WorldHeight - 1
 
-	// percorre cada camada Z
-	for z := 0; z < Nz; z++ {
-		// matriz de marcação para faces já mescladas
-		used := make([]bool, Nx*Ny)
+	for y := 0; y < Ny; y++ {
+		// percorre cada camada Z
+		block:
+		for z := 0; z < Nz; z++ {
+			// matriz de marcação para faces já mescladas
+			used := make([]bool, Nx*Ny)
 
-		for x := 0; x < Nx; x++ {
-			idx := y*Nx + x
-			if used[idx] {
-				continue
-			}
-
-			voxel := chunk.Voxels[x][y][z]
-			if voxel.Type != "Cloud" {
-				continue
-			}
-
-			// tenta expandir retângulo na direção X
-			width := 1
-			for x+width < Nx {
-				next := chunk.Voxels[x+width][y][z]
-				if next.Type == "Cloud" && !used[y*Nx+(x+width)] {
-					width++
-				} else {
-					break
+			for x := 0; x < Nx; x++ {
+				idx := y*Nx + x
+				if used[idx] {
+					continue
 				}
-			}
 
-			// marca como usado
-			for w := 0; w < width; w++ {
-				used[y*Nx+(x+w)] = true
-			}
+				voxel := chunk.Voxels[x][y][z]
+				block := world.BlockTypes[voxel.Type]
+	
+				if !block.IsSolid {
+					continue
+				}
 
-			// cria quad superior (face voltada para cima)
-			quadTop := [4][3]float32{
-				{float32(x), float32(y), float32(z)},
-				{float32(x + width), float32(y), float32(z)},
-				{float32(x + width), float32(y), float32(z + 1)},
-				{float32(x), float32(y), float32(z + 1)},
-			}
+				// tenta expandir retângulo na direção X
+				width := 1
+				for x+width < Nx {
+					next := chunk.Voxels[x+width][y][z]
+					next_top := chunk.Voxels[x+width][y+1][z]
 
-			for _, v := range quadTop {
-				chunk.Vertices = append(chunk.Vertices, v[0], v[1], v[2])
-				c := world.BlockTypes["Cloud"].Color
-				chunk.Colors = append(chunk.Colors, c.R, c.G, c.B, 110)
-			}
+					if world.BlockTypes[next_top.Type].IsSolid { break block }
 
-			chunk.Indices = append(chunk.Indices,
-				indexOffset, indexOffset+1, indexOffset+2,
-				indexOffset, indexOffset+2, indexOffset+3,
-			)
-			indexOffset += 4
+					if next.Type == voxel.Type && !used[y*Nx+(x+width)] {
+						width++
+					} else {
+						break
+					}
+				}
 
-			// Quad inferior (face voltada para baixo, normal -Y)
-			// Note que a ordem dos vértices é invertida para que a face seja "virada"
-			quadBottom := [4][3]float32{
-				{float32(x), float32(y), float32(z)},
-				{float32(x), float32(y), float32(z + 1)},
-				{float32(x + width), float32(y), float32(z + 1)},
-				{float32(x + width), float32(y), float32(z)},
+				// marca como usado
+				for w := 0; w < width; w++ {
+					used[y*Nx+(x+w)] = true
+				}
+
+				// cria quad superior (face voltada para cima)
+				quadTop := [4][3]float32{
+					{float32(x), float32(y), float32(z)},
+					{float32(x + width), float32(y), float32(z)},
+					{float32(x + width), float32(y), float32(z + 1)},
+					{float32(x), float32(y), float32(z + 1)},
+				}
+
+				for _, v := range quadTop {
+					chunk.Vertices = append(chunk.Vertices, v[0], v[1], v[2])
+					c := world.BlockTypes[voxel.Type].Color
+					chunk.Colors = append(chunk.Colors, c.R, c.G, c.B, c.A)
+				}
+
+				chunk.Indices = append(chunk.Indices,
+					indexOffset, indexOffset+1, indexOffset+2,
+					indexOffset, indexOffset+2, indexOffset+3,
+				)
+				indexOffset += 4
+
+				// Quad inferior (face voltada para baixo, normal -Y)
+				// Note que a ordem dos vértices é invertida para que a face seja "virada"
+				quadBottom := [4][3]float32{
+					{float32(x), float32(y), float32(z)},
+					{float32(x), float32(y), float32(z + 1)},
+					{float32(x + width), float32(y), float32(z + 1)},
+					{float32(x + width), float32(y), float32(z)},
+				}
+				for _, v := range quadBottom {
+					chunk.Vertices = append(chunk.Vertices, v[0], v[1], v[2])
+					c := world.BlockTypes[voxel.Type].Color
+					chunk.Colors = append(chunk.Colors, c.R, c.G, c.B, c.A)
+					chunk.Normals = append(chunk.Normals, 0, -1, 0) // normal para baixo
+				}
+				chunk.Indices = append(chunk.Indices,
+					indexOffset, indexOffset+1, indexOffset+2,
+					indexOffset, indexOffset+2, indexOffset+3,
+				)
+				indexOffset += 4
+
+				quadLeft := [4][3]float32{
+					{float32(x), float32(y), float32(z)},
+					{float32(x), float32(y + 1), float32(z)},
+					{float32(x + width), float32(y + 1), float32(z)},
+					{float32(x + width), float32(y ), float32(z)},
+				}
+				for _, v := range quadLeft {
+					chunk.Vertices = append(chunk.Vertices, v[0], v[1], v[2])
+					c := world.BlockTypes[voxel.Type].Color
+					chunk.Colors = append(chunk.Colors, c.R, c.G, c.B, c.A)
+					chunk.Normals = append(chunk.Normals, 1, 0, 0)
+				}
+				chunk.Indices = append(chunk.Indices,
+					indexOffset, indexOffset+1, indexOffset+2,
+					indexOffset, indexOffset+2, indexOffset+3,
+				)
+				indexOffset += 4
 			}
-			for _, v := range quadBottom {
-				chunk.Vertices = append(chunk.Vertices, v[0], v[1], v[2])
-				c := world.BlockTypes["Cloud"].Color
-				chunk.Colors = append(chunk.Colors, c.R, c.G, c.B, 160)
-				chunk.Normals = append(chunk.Normals, 0, -1, 0) // normal para baixo
-			}
-			chunk.Indices = append(chunk.Indices,
-				indexOffset, indexOffset+1, indexOffset+2,
-				indexOffset, indexOffset+2, indexOffset+3,
-			)
-			indexOffset += 4
 		}
 	}
 
@@ -282,17 +311,17 @@ func BuildCloudGreedyMesh(game *load.Game, chunk *pkg.Chunk) {
 		mesh.Colors = (*uint8)(unsafe.Pointer(&chunk.Colors[0]))
 	}
 
-	rl.UploadMesh(&mesh, false)
-	model := rl.LoadModelFromMesh(mesh)
+	//rl.UploadMesh(&mesh, false)
+	//model := rl.LoadModelFromMesh(mesh)
 
 	mat := rl.LoadMaterialDefault()
 	mat.Shader = game.Shader
-	//mat.Maps.Color = rl.White
-	model.MaterialCount = 1
-	model.Materials = &mat
+	//model.MaterialCount = 1
+	//model.Materials = &mat
 
-	chunk.CloudModel = model
 	chunk.IsOutdated = false
+
+	return mesh
 }
 
 func shouldDrawFace(chunk *pkg.Chunk, pos pkg.Coords, faceIndex int) bool {
@@ -338,7 +367,7 @@ func shouldDrawFace(chunk *pkg.Chunk, pos pkg.Coords, faceIndex int) bool {
 
 	neighbor := chunk.Neighbors[neighborIdx]
 	if neighbor == nil {
-		return true // no neighbor → exposed face
+		return false // no neighbor → exposed face
 	}
 
 	// Adjusts coordinates relative to the neighbor.

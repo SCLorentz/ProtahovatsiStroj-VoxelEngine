@@ -60,8 +60,6 @@ func main() {
 	rl.InitAudioDevice()
 
 	game := load.InitGame()
-	//CustomMesh := GenMeshCustom()
-	//CustomModel := rl.LoadModelFromMesh(CustomMesh);
 
 	// Main game loop
 	for !rl.WindowShouldClose() {
@@ -84,6 +82,7 @@ func main() {
 			}
 		}
 
+	
 		if rl.IsMouseButtonPressed(rl.MouseLeftButton) && render.ShouldUpdateCamera {
 			rl.DisableCursor()
 		}
@@ -91,13 +90,13 @@ func main() {
 		// Update the camera only when it is not in the menu.
 		if render.ShouldUpdateCamera {
 			rl.UpdateCamera(&game.Camera, game.CameraMode)
+			load.MainPlayer.Camera.Position.Y += 10.0
 		}
 
 		// Manage chunks based on player's position
 		world.ManageChunks(game.Worley, game.BiomeSelector, game.Camera.Position, game.ChunkCache, game.Perlin1, game.Perlin2, game.Perlin3)
 
 		//  Draw
-		//rl.DrawModel(CustomModel, rl.Vector3{2, 62, 10}, 1.0, rl.Red)
 		render.RenderGame(&game)
 	}
 

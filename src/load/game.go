@@ -70,9 +70,7 @@ const (
 )
 
 var FogColor = []float32{0.588, 0.816, 0.914, 1.0} // clearSky
-
 var FogCoefficient float32 = 0.072
-
 var Ambient float32 = 0.4
 
 var startTime time.Time
@@ -108,6 +106,17 @@ type Game struct {
 	//LightPosition rl.Vector3
 }
 
+type Player struct {
+	Position rl.Vector3
+	Speed float32
+	Camera rl.Camera
+	Pitch  float32
+  Yaw    float32
+	Sens   float32
+}
+
+var MainPlayer Player
+
 func InitGame() Game {
 	rl.SetConfigFlags(rl.FlagWindowResizable)
 	rl.InitWindow(ScreenWidth, ScreenHeight, "Protahovatsi Stroj - Voxel Game")
@@ -116,7 +125,7 @@ func InitGame() Game {
 	rl.SetTraceLogLevel(rl.LogError)
 
 	// That way the Esc key doesn't exit the game
-	//rl.SetExitKey(0)
+	rl.SetExitKey(0)
 
 	camera := rl.Camera{
 		Position:   rl.NewVector3(2.79, 62.0, 10.0),
@@ -124,13 +133,16 @@ func InitGame() Game {
 		Up:         rl.NewVector3(0.0, 1.0, 0.0),
 		Fovy:       45.0,
 		Projection: rl.CameraPerspective,
+		//Projection: rl.CameraOrthographic,
 	}
 	cameraMode := rl.CameraFree
 	//cameraMode := rl.CameraFirstPerson
 
-	/*playerPosition := rl.NewVector3(0.0, 1.0, 2.0)
-	playerSize := rl.NewVector3(1.0, 2.0, 1.0)
-	playerColor := rl.Green*/
+	MainPlayer = Player{
+		Position: rl.NewVector3(2.79, 62.0, 10),
+		Speed: 1.0,
+		Camera: camera,
+	}
 
 	// Initializes Perlin noise
 	seed1 := rand.Int63()

@@ -60,13 +60,16 @@ func (cc *ChunkCache) GetChunk(worley *WorleyNoise, biomeSel *BiomeSelector, pos
 		return newChunk
 	}
 
-	if exists ||
-		(!exists && hasPlants && len(oldPlants) > 0 || hasTrees && len(oldTrees) > 0) {
-			// First time the chunk is generated
-			// If there are saved plants, reuse them; if not, create new ones
-			newChunk = GenerateChunk(worley, biomeSel, position, p1, p2, p3, cc, oldPlants, true, oldTrees, true)
+	if exists {
+		newChunk = GenerateChunk(worley, biomeSel, position, p1, p2, p3, cc, oldPlants, true, oldTrees, true)
 	} else {
-		newChunk = GenerateChunk(worley, biomeSel, position, p1, p2, p3, cc, nil, false, nil, false)
+		// First time the chunk is generated
+		// If there are saved plants, reuse them; if not, create new ones
+		if (hasPlants && len(oldPlants) > 0) || (hasTrees && len(oldTrees) > 0) {
+			newChunk = GenerateChunk(worley, biomeSel, position, p1, p2, p3, cc, oldPlants, true, oldTrees, true)
+		} else {
+			newChunk = GenerateChunk(worley, biomeSel, position, p1, p2, p3, cc, nil, false, nil, false)
+		}
 	}
 
 	newChunk.IsOutdated = true // reset flag after reconstruction --> ensures that the mesh is rebuilt and the plant voxels are reapplied
@@ -121,8 +124,8 @@ func (cc *ChunkCache) CleanUp(playerPosition rl.Vector3) {
 	for coord := range cc.Active {
 		if Abs(coord.X-playerCoord.X) > chDist ||
 			Abs(coord.Z-playerCoord.Z) > chDist {
-			// DO NOT delete cc.PlantsCache[coord] — plants remain stored
 			delete(cc.Active, coord)
+			// DO NOT delete cc.PlantsCache[coord] — plants remain stored
 		}
 	}
 }
@@ -159,9 +162,7 @@ func ManageChunks(worley *WorleyNoise, biomeSel *BiomeSelector, playerPosition r
 	chunkCache.CacheMutex.RLock()
 	for _, coord := range candidates {
 		chunk, exists := chunkCache.Active[coord]
-		if exists || !(chunk != nil && chunk.IsOutdated) {
-			continue
-		}
+		if !exists || (chunk != nil && chunk.IsOutdated) {
 			chunkPos := rl.NewVector3(float32(coord.X*pkg.ChunkSize), 0, float32(coord.Z*pkg.ChunkSize))
 
 			chunkRequests <- chunkPos
@@ -171,6 +172,7 @@ func ManageChunks(worley *WorleyNoise, biomeSel *BiomeSelector, playerPosition r
 			if chunksQueued >= MaxChunksPerFrame {
 				break // does not block the loop, only exits
 			}
+		}
 	}
 	chunkCache.CacheMutex.RUnlock()
 	close(chunkRequests)
@@ -190,7 +192,7 @@ func ManageChunks(worley *WorleyNoise, biomeSel *BiomeSelector, playerPosition r
 				Y: 0,
 				Z: coord.Z + int(direction.Z),
 			}
-			if neighbor, exists := chunkCache.Active[neighborCoord]; exists && chunk.Neighbors[i] != neighbor {
+			if neighbor, exists := chunkCache.Active[neighborCoord]; exists {
 				if chunk.Neighbors[i] != neighbor {
 					// Update reference
 					chunk.Neighbors[i] = neighbor
@@ -198,12 +200,13 @@ func ManageChunks(worley *WorleyNoise, biomeSel *BiomeSelector, playerPosition r
 					chunk.IsOutdated = true
 					neighbor.IsOutdated = true
 				}
-				continue
+			} else {
+				if chunk.Neighbors[i] != nil {
+					// Neighbor was removed → mark chunk as outdated
+					chunk.Neighbors[i] = nil
+					chunk.IsOutdated = true
+				}
 			}
-			if chunk.Neighbors[i] == nil { continue }
-			// Neighbor was removed → mark chunk as outdated
-			chunk.Neighbors[i] = nil
-			chunk.IsOutdated = true
 		}
 	}
 	chunkCache.CacheMutex.Unlock()
