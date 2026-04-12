@@ -188,12 +188,12 @@ func ManageChunks(worley *WorleyNoise, biomeSel *BiomeSelector, playerPosition r
 					chunk.IsOutdated = true
 					neighbor.IsOutdated = true
 				}
-			} else {
-				if chunk.Neighbors[i] != nil {
-					// Neighbor was removed → mark chunk as outdated
-					chunk.Neighbors[i] = nil
-					chunk.IsOutdated = true
-				}
+				continue
+			}
+			if chunk.Neighbors[i] != nil {
+				// Neighbor was removed → mark chunk as outdated
+				chunk.Neighbors[i] = nil
+				chunk.IsOutdated = true
 			}
 		}
 	}

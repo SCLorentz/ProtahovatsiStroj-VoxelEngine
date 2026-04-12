@@ -162,9 +162,9 @@ func applyLSystem(axiom string, rules map[rune]string, iterations int) string {
 		for _, char := range result {
 			if replacement, ok := rules[char]; ok {
 				builder.WriteString(replacement)
-			} else {
-				builder.WriteRune(char)
+				continue
 			}
+			builder.WriteRune(char)
 		}
 
 		// converts the builder's content into a string
@@ -379,12 +379,9 @@ func genClouds(chunk *pkg.Chunk, position rl.Vector3, x, z int, p *perlin.Perlin
 
 	noise := p.Noise2D(float64(globalX)*cloudFrequency, float64(globalZ)*cloudFrequency)
 
-	if noise > threshold {
-		if chunk.Voxels[x][pkg.CloudHeight][z].Type == "Air" {
+	if noise > threshold &&
+		chunk.Voxels[x][pkg.CloudHeight][z].Type == "Air" {
 			chunk.Voxels[x][pkg.CloudHeight][z] = pkg.VoxelData{Type: "Cloud"}
-		} else {
-			return // meets trees or mauntain
-		}
 	}
 }
 

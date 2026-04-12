@@ -20,19 +20,27 @@ func main() {
 	for !rl.WindowShouldClose() {
 		// Toggle menu
 		if rl.IsKeyPressed(rl.KeyTab) {
-			render.ShowMenu = !render.ShowMenu
+			render.ShowConfigMenu = !render.ShowConfigMenu
 
-			if render.ShowMenu {
+			if render.ShowConfigMenu {
 				rl.EnableCursor()
 			}
 		}
 
-		if rl.IsMouseButtonPressed(rl.MouseLeftButton) && !render.ShowMenu {
+		if rl.IsKeyPressed(rl.KeyEscape) {
+			render.ShowEscMenu = !render.ShowEscMenu
+
+			if render.ShowEscMenu {
+				rl.EnableCursor()
+			}
+		}
+
+		if rl.IsMouseButtonPressed(rl.MouseLeftButton) && !render.ShowConfigMenu {
 			rl.DisableCursor()
 		}
 
 		// Update the camera only when it is not in the menu.
-		if !render.ShowMenu {
+		if render.ShouldUpdateCamera {
 			rl.UpdateCamera(&game.Camera, game.CameraMode)
 		}
 

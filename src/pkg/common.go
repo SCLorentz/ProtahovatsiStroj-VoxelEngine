@@ -6,9 +6,9 @@ import (
 )
 
 var PlantModels [8]rl.Model
+var CloudHeight int = 100
 
 var ChunkDistance int = 5
-var CloudHeight int = 80
 
 const (
 	WorldHeight        int     = 112

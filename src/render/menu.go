@@ -12,18 +12,51 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-var ShowMenu bool = false
-var ShowFPS bool = true
-var ShowPosition bool = true
-var ShowClouds bool = true
+var ShowConfigMenu = false
+var ShowEscMenu = false
+var ShouldUpdateCamera = true
 
-var FrameLimit int = 60
-var prevFrameLimit int = FrameLimit
+type ConfigState struct {
+	ShowFPS bool
+	ShowPosition bool
+	RenderClouds bool
+	FrameRateLimit int
+	OldFrameRateLimit int
+	CloudHeight int
+}
 
 var menuScroll rl.Vector2
 var menuView rl.Rectangle
 
-func renderMenu(menuX, menuY, width int32) {
+var GameState = ConfigState{
+	ShowFPS: true,
+	ShowPosition: true,
+	RenderClouds: true,
+	FrameRateLimit: 120,
+	OldFrameRateLimit: 120,
+	CloudHeight: 100,
+}
+
+func renderEscMenu(menuX, menuY, width int32) {
+	rl.BeginScissorMode(
+		int32(menuView.X),
+		int32(menuView.Y),
+		int32(menuView.Width),
+		int32(menuView.Height),
+	)
+
+	if gui.Button(rl.NewRectangle(float32(menuX + 20), float32(menuY + 50), float32(width - 40), 40.0), "Exit Game") {
+		rl.WindowShouldClose()
+	}
+
+	gui.Button(rl.NewRectangle(float32(menuX + 20), float32(menuY + 100), float32(width - 40), 40.0), "Game Settings")
+
+	//gui.Button(rl.NewRectangle(float32(menuX + 20), float32(menuY + 150), float32(width - 40), 40.0), "Credits and Attribution")
+
+	rl.EndScissorMode()
+}
+
+func renderConfigMenu(menuX, menuY, width int32) {
 	rl.BeginScissorMode(
 		int32(menuView.X),
 		int32(menuView.Y),
@@ -33,17 +66,17 @@ func renderMenu(menuX, menuY, width int32) {
 
 	offsetY := int32(menuScroll.Y)
 
-	newButton(menuX+20, menuY+40+offsetY, float32(width-40), 40.0, &ShowPosition, "Show Player Position")
+	newButton(menuX+20, menuY+40+offsetY, float32(width-40), 40.0, &GameState.ShowPosition, "Show Player Position")
 
-	newButton(menuX+20, menuY+90+offsetY, float32(width-40), 40.0, &ShowFPS, "Show FPS")
+	newButton(menuX+20, menuY+90+offsetY, float32(width-40), 40.0, &GameState.ShowFPS, "Show FPS")
 
 	//Y = Y + 60 + 30
 	newGuiSlider(menuX+20, menuY+140+offsetY, float32(width-40), 40.0,
-		&FrameLimit, 30, 120,
-		fmt.Sprintf("FPS Limit: %d", FrameLimit),
+		&GameState.FrameRateLimit, 30, 120,
+		fmt.Sprintf("FPS Limit: %d", GameState.FrameRateLimit),
 	)
 
-	newButton(menuX+20, menuY+230+offsetY, float32(width-40), 40.0, &ShowClouds, "Clouds")
+	newButton(menuX+20, menuY+230+offsetY, float32(width-40), 40.0, &GameState.RenderClouds, "Clouds")
 
 	newGuiSlider(menuX+20, menuY+290+offsetY, float32(width-40), 40.0,
 		&pkg.CloudHeight, 30, 120,

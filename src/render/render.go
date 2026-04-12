@@ -115,7 +115,7 @@ func RenderVoxels(game *load.Game) {
 			*/
 			p := rl.NewVector3(it.Position.X, float32(pkg.CloudHeight), it.Position.Z)
 
-			if ShowClouds {
+			if GameState.RenderClouds {
 				rl.DrawCube(p, 1.0, 0.0, 1.0, it.Color)
 			}
 		}
@@ -222,7 +222,8 @@ func RenderGame(game *load.Game) {
 
 	applyUnderwaterEffect(game)
 
-	if ShowMenu {
+	if ShowConfigMenu {
+		ShouldUpdateCamera = false
 		menuWidth := int32(rl.GetScreenWidth()) / 2
 		menuHeight := int32(rl.GetScreenHeight()) / 2
 		menuX := (int32(rl.GetScreenWidth()) - menuWidth) / 2
@@ -234,20 +235,36 @@ func RenderGame(game *load.Game) {
 		contentHeight := float32(700) // Actual height of the content, including what is not visible.
 		contentBounds := rl.NewRectangle(0, 0, float32(menuWidth-20), contentHeight)
 
-		gui.ScrollPanel(menuBounds, "Game settings", contentBounds, &menuScroll, &menuView)
+		gui.ScrollPanel(menuBounds, "Game Settings", contentBounds, &menuScroll, &menuView)
 
-		renderMenu(menuX, menuY, menuWidth)
+		renderConfigMenu(menuX, menuY, menuWidth)
+	} else if ShowEscMenu {
+		ShouldUpdateCamera = false
+		menuWidth := int32(rl.GetScreenWidth()) / 2
+		menuHeight := int32(rl.GetScreenHeight()) / 2
+		menuX := (int32(rl.GetScreenWidth()) - menuWidth) / 2
+		menuY := (int32(rl.GetScreenHeight()) - menuHeight) / 2
+
+		menuBounds := rl.NewRectangle(float32(menuX), float32(menuY), float32(menuWidth), float32(menuHeight))
+
+		contentHeight := float32(200)
+		contentBounds := rl.NewRectangle(0, 0, float32(menuWidth-20), contentHeight)
+
+		gui.ScrollPanel(menuBounds, "Pause Menu", contentBounds, &menuScroll, &menuView)
+		renderEscMenu(menuX, menuY, menuWidth)
+	} else {
+		ShouldUpdateCamera = true
 	}
 
-	if ShowFPS {
+	if GameState.ShowFPS {
 		rl.DrawFPS(10, 30)
 	}
 
-	if FrameLimit != prevFrameLimit {
-		rl.SetTargetFPS(int32(FrameLimit))
+	if GameState.FrameRateLimit != GameState.OldFrameRateLimit {
+		rl.SetTargetFPS(int32(GameState.FrameRateLimit))
 	}
 
-	if ShowPosition {
+	if GameState.ShowPosition {
 		positionText := fmt.Sprintf("Player's position: (%.2f, %.2f, %.2f)", game.Camera.Position.X, game.Camera.Position.Y, game.Camera.Position.Z)
 		rl.DrawText(positionText, 10, 5, 20, rl.DarkGreen)
 	}

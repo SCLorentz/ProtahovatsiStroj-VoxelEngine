@@ -162,12 +162,10 @@ func InitGame() Game {
 	chunkCache.Active[originCoord] = world.GenerateChunk(worley, biomeSel, originPos, perlin1, perlin2, perlin3, chunkCache, nil, false, nil, false)
 
 	//	That value can later be changed in game, it is just initialized here
-	rl.SetTargetFPS(60)
+	rl.SetTargetFPS(120)
 
 	defaultFont := rl.GetFontDefault()
-
 	gui.SetFont(defaultFont)
-
 	gui.SetStyle(gui.DEFAULT, gui.TEXT_SIZE, 20) // bigger text font for buttons
 
 	// Color when mouse hovers over the button (RRGGBBAA)
