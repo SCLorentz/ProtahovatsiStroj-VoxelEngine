@@ -13,7 +13,6 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-<<<<<<< HEAD
 func DrawFrameView(chunk *pkg.Chunk, chunkPos rl.Vector3) {
 	verts := chunk.Vertices
   inds := chunk.Indices
@@ -50,9 +49,7 @@ func DrawFrameView(chunk *pkg.Chunk, chunkPos rl.Vector3) {
 		rl.DrawLine3D(x2, x0, rl.Red)
 	}
 }
-=======
 var cloudColor rl.Color = world.BlockTypes["Cloud"].Color
->>>>>>> 940ec6882166068be7b17332f081b411320e56dc
 
 func RenderVoxels(game *load.Game) {
 	cam := game.Camera.Position
@@ -139,49 +136,8 @@ func RenderVoxels(game *load.Game) {
 			*/
 			p := rl.NewVector3(it.Position.X, float32(pkg.CloudHeight), it.Position.Z)
 
-<<<<<<< HEAD
 			if GameState.RenderClouds {
-				/*CloudMesh := rl.Mesh{}
-
-				vertices := []float32{}
-				size := float32(1)
-				offset := int32(len(vertices) / 3)
-
-				vertices = append(vertices, 
-				    p.X, p.Y, p.Z+size,
-				    p.X+size, p.Y, p.Z+size,
-				    p.X+size, p.Y+size, p.Z+size,
-				    p.X, p.Y+size, p.Z+size,
-				)
-
-				indices := []uint16{}
-				indices = append(indices, 
-				    uint16(offset+0), uint16(offset+1), uint16(offset+2),
-				    uint16(offset+0), uint16(offset+2), uint16(offset+3),
-				)
-
-				normals := []float32{}
-				for i := 0; i < 4; i++ {
-				    normals = append(normals, 0, 0, 1)
-				}
-				//texcoords := []float32{}
-
-				CloudMesh.VertexCount = int32(len(vertices) / 3)
-				CloudMesh.TriangleCount = int32(len(indices) / 3)
-
-				CloudMesh.Vertices = &vertices[0]
-				CloudMesh.Indices = &indices[0]
-				CloudMesh.Normals = &normals[0]
-				//CloudMesh.Texcoords = &texcoords[0]
-
-				rl.UploadMesh(&CloudMesh, false)
-				rl.LoadModelFromMesh(CloudMesh)*/
-
 				rl.DrawCube(p, 1.0, 1.0, 1.0, it.Color)
-=======
-			if ShowClouds {
-				rl.DrawCube(p, 1.0, 0.0, 1.0, cloudColor)
->>>>>>> 940ec6882166068be7b17332f081b411320e56dc
 			}
 		}
 	}
