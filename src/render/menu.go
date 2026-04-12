@@ -23,6 +23,7 @@ type ConfigState struct {
 	FrameRateLimit int
 	OldFrameRateLimit int
 	CloudHeight int
+	DrawFrames bool
 }
 
 var menuScroll rl.Vector2
@@ -35,6 +36,7 @@ var GameState = ConfigState{
 	FrameRateLimit: 120,
 	OldFrameRateLimit: 120,
 	CloudHeight: 100,
+	DrawFrames: false,
 }
 
 func renderEscMenu(menuX, menuY, width int32) {
@@ -70,30 +72,32 @@ func renderConfigMenu(menuX, menuY, width int32) {
 
 	newButton(menuX+20, menuY+90+offsetY, float32(width-40), 40.0, &GameState.ShowFPS, "Show FPS")
 
+	newButton(menuX+20, menuY+140+offsetY, float32(width-40), 40.0, &GameState.DrawFrames, "Draw Framed View")
+
 	//Y = Y + 60 + 30
-	newGuiSlider(menuX+20, menuY+140+offsetY, float32(width-40), 40.0,
+	newGuiSlider(menuX+20, menuY+190+offsetY, float32(width-40), 40.0,
 		&GameState.FrameRateLimit, 30, 120,
 		fmt.Sprintf("FPS Limit: %d", GameState.FrameRateLimit),
 	)
 
-	newButton(menuX+20, menuY+230+offsetY, float32(width-40), 40.0, &GameState.RenderClouds, "Clouds")
+	newButton(menuX+20, menuY+270+offsetY, float32(width-40), 40.0, &GameState.RenderClouds, "Clouds")
 
-	newGuiSlider(menuX+20, menuY+290+offsetY, float32(width-40), 40.0,
+	newGuiSlider(menuX+20, menuY+320+offsetY, float32(width-40), 40.0,
 		&pkg.CloudHeight, 30, 120,
 		fmt.Sprintf("Cloud Height: %d", pkg.CloudHeight),
 	)
 
-	newGuiSlider(menuX+20, menuY+380+offsetY, float32(width-40), 40.0,
+	newGuiSlider(menuX+20, menuY+400+offsetY, float32(width-40), 40.0,
 		&pkg.ChunkDistance, 1, 10,
 		fmt.Sprintf("View Distance: %d", pkg.ChunkDistance),
 	)
 
-	newGuiSlider(menuX+20, menuY+470+offsetY, float32(width-40), 40.0,
+	newGuiSlider(menuX+20, menuY+490+offsetY, float32(width-40), 40.0,
 		&load.FogCoefficient, 0.0, 0.1,
 		fmt.Sprintf("Fog Density: %.3f", load.FogCoefficient),
 	)
 
-	newGuiSlider(menuX+20, menuY+560+offsetY, float32(width-40), 40.0,
+	newGuiSlider(menuX+20, menuY+580+offsetY, float32(width-40), 40.0,
 		&baseVolume, 0.0, 1.0,
 		fmt.Sprintf("Sound FX Volume: %.3f", baseVolume),
 	)

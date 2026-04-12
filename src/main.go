@@ -20,6 +20,7 @@ func main() {
 	for !rl.WindowShouldClose() {
 		// Toggle menu
 		if rl.IsKeyPressed(rl.KeyTab) {
+			render.ShowEscMenu = false
 			render.ShowConfigMenu = !render.ShowConfigMenu
 
 			if render.ShowConfigMenu {
@@ -28,6 +29,7 @@ func main() {
 		}
 
 		if rl.IsKeyPressed(rl.KeyEscape) {
+			render.ShowConfigMenu = false
 			render.ShowEscMenu = !render.ShowEscMenu
 
 			if render.ShowEscMenu {
@@ -35,7 +37,7 @@ func main() {
 			}
 		}
 
-		if rl.IsMouseButtonPressed(rl.MouseLeftButton) && !render.ShowConfigMenu {
+		if rl.IsMouseButtonPressed(rl.MouseLeftButton) && render.ShouldUpdateCamera {
 			rl.DisableCursor()
 		}
 

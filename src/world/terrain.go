@@ -75,24 +75,24 @@ func GenerateChunk(worley *WorleyNoise, biomeSel *BiomeSelector, position rl.Vec
 
 			for y := 0; y < pkg.WorldHeight; y++ {
 				isSolid := y <= height
-				if isSolid {
-					chunk.Voxels[x][y][z] = pkg.VoxelData{Type: biome.UndergroundBlock}
-					if y == height && y > waterLevel {
-						chunk.Voxels[x][y][z] = pkg.VoxelData{
-							Type:  biome.SurfaceBlock,
-							Color: biome.GrassColor,
-						}
-					} else if y <= height-5 {
-						chunk.Voxels[x][y][z] = pkg.VoxelData{Type: "Stone"}
-					}
-				} else {
+				if !isSolid {
 					chunk.Voxels[x][y][z] = pkg.VoxelData{Type: "Air"}
+					continue
+				}
+
+				chunk.Voxels[x][y][z] = pkg.VoxelData{Type: biome.UndergroundBlock}
+				if y == height && y > waterLevel {
+					chunk.Voxels[x][y][z] = pkg.VoxelData{
+						Type:  biome.SurfaceBlock,
+						Color: biome.GrassColor,
+					}
+				} else if y <= height-5 {
+					chunk.Voxels[x][y][z] = pkg.VoxelData{Type: "Stone"}
 				}
 			}
 
 			// Add water to specific layer
 			genWaterFormations(chunk, x, z)
-
 			genClouds(chunk, position, x, z, p1)
 		}
 	}
@@ -103,7 +103,6 @@ func GenerateChunk(worley *WorleyNoise, biomeSel *BiomeSelector, position rl.Vec
 
 	//  Generate the plants after the terrain generation
 	generatePlants(chunk, position, oldPlants, reusePlants)
-
 	generateTrees(chunk, chunkCache, position, oldTrees, reuseTrees)
 
 	// Marks the chunk as outdated so that the mesh can be generated
@@ -171,15 +170,16 @@ func genCaves(chunk *pkg.Chunk, chunkCache *ChunkCache, chunkOrigin rl.Vector3, 
 
 				carveSphere(targetChunk, localX, localY, localZ, dynamicRadius)
 			}
-		} else {
-			chunkCache.CacheMutex.Lock()
-			chunkCache.PendingVoxels[coord] = append(chunkCache.PendingVoxels[coord],
-				PendingWrite{
-					Pos:   [3]int{localX, localY, localZ},
-					Voxel: pkg.VoxelData{Type: "Air"},
-				})
-			chunkCache.CacheMutex.Unlock()
+			continue
 		}
+
+		chunkCache.CacheMutex.Lock()
+		chunkCache.PendingVoxels[coord] = append(chunkCache.PendingVoxels[coord],
+			PendingWrite{
+				Pos:   [3]int{localX, localY, localZ},
+				Voxel: pkg.VoxelData{Type: "Air"},
+			})
+		chunkCache.CacheMutex.Unlock()
 	}
 }
 
@@ -192,10 +192,10 @@ func carveSphere(chunk *pkg.Chunk, cx, cy, cz, radius int) {
 					y >= 0 && y < pkg.WorldHeight &&
 					z >= 0 && z < pkg.ChunkSize {
 					dx, dy, dz := x-cx, y-cy, z-cz
-					if chunk.Voxels[x][y][z].Type == "Water" {
-						return
-					} else if dx*dx+dy*dy+dz*dz <= radius*radius {
+
+					if dx*dx+dy*dy+dz*dz <= radius*radius && chunk.Voxels[x][y][z].Type != "Water" {
 						chunk.Voxels[x][y][z] = pkg.VoxelData{Type: "Air"}
+						continue
 					}
 				}
 			}
